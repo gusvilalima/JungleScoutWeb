@@ -20,257 +20,26 @@ import random
 from collections import defaultdict
 import ujson
 import functools
-import csv 
+import json
 
 
 
+with open("configWeb.json", "r") as json_file:
+    config = json.load(json_file)
 
 
 
-
-SIGN_IN_URL = 'https://api.junglescout.com/users/sign_in'
-KEYWORD_URL = 'https://api.junglescout.com/api/keyword_engine/get_related_keywords'
-SUPPLIERS_URL = 'https://api.junglescout.com/api/suppliers'
-PRODUCT_DATABASE_URL = 'https://api.junglescout.com/api/products/get_products'
-
-SIGN_IN_HEADERS = {
-                    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.146 Safari/537.36',
-                    'content-type': 'application/json'
-}
-
-
-SIGN_IN_PAYLOADS = {
-                    "email":"charlie.hung@rocket-internet.com.au",
-                    "password":"Panther1.",
-                    "mixpanelId":"177813702f35ed-0726405ac4c2a8-163d6558-fa000-177813702f4663"
-}
+SIGN_IN_URL = config['SIGN_IN_URL']
+KEYWORD_URL = config['KEYWORD_URL']
+SUPPLIERS_URL = config['SUPPLIERS_URL']
+PRODUCT_DATABASE_URL = config['PRODUCT_DATABASE_URL']
+SIGN_IN_HEADERS = config['SIGN_IN_HEADERS']
+SIGN_IN_PAYLOADS = config['SIGN_IN_PAYLOADS']
+headers = config['headers']
+params = config['params']
+list_keys = config['list_keys']
 
 
-
-headers = {
-    'authority': 'api.junglescout.com',
-    'sec-ch-ua': '"Chromium";v="88", "Google Chrome";v="88", ";Not A Brand";v="99"',
-    'accept': '*',
-    'authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2MTgwMDYxNzQsImlhdCI6MTYxNzQwMTM3NCwiaXNzIjoianVuZ2xlc2NvdXRfYXBpIiwiYXVkIjoiY2xpZW50IiwiYXV0aF90b2tlbiI6IjcwNDVmNjg5NzQ3MWJmOTZkYmJlNmEwZTFhZDE5OGM5In0.vpaQfkKS5eFmVvE8mL3GGGSmfb2x6DXmJ50uaSw34U4',
-    'sec-ch-ua-mobile': '?0',
-    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36',
-    'content-type': 'application/json',
-    'origin': 'https://members.junglescout.com',
-    'sec-fetch-site': 'same-site',
-    'sec-fetch-mode': 'cors',
-    'sec-fetch-dest': 'empty',
-    'referer': 'https://members.junglescout.com/',
-    'accept-language': 'en-US,en;q=0.9',
-    'if-none-match': 'W/"a7c3f3a0930435f5c07e8ee0ca59b11c"',
-}
-
-
-
-params = {
-  'keyword': 
-    {
-    'data[shingles][type]': 'shingles',
-    'data[shingles][column]': 'name',
-    'data[shingles][searchTerm]': 'makeup',
-    'data[category][type]': 'terms',
-    'data[category][valuesArray][]': ['Appliances', 'Arts, Crafts & Sewing', 'Automotive', 'Baby', 'Beauty & Personal Care', 'Camera & Photo', 'Cell Phones & Accessories', 'Clothing, Shoes & Jewelry', 'Computers & Accessories', 'Electronics', 'Grocery & Gourmet Food', 'Health & Household', 'Home & Kitchen', 'Industrial & Scientific', 'Kitchen & Dining', 'Musical Instruments', 'Office Products', 'Patio, Lawn & Garden', 'Pet Supplies', 'Software', 'Sports & Outdoors', 'Tools & Home Improvement', 'Toys & Games', 'Video Games'],
-    'data[country][type]': 'terms',
-    'data[country][valuesArray][]': 'us',
-    'data[wordCount][type]': 'range',
-    'data[wordCount][min]': '0',
-    'data[wordCount][max]': '999',
-    'data[isComplete][type]': 'terms',
-    'data[isComplete][valuesArray][]': 'true',
-    'data[state][type]': 'terms',
-    'data[state][valuesArray][]': 'active',
-    'data[estimatedExactSearchVolume][type]': 'range',
-    'data[estimatedExactSearchVolume][min]': '0',
-    'data[estimatedExactSearchVolume][max]': '9999999',
-    'data[estimatedBroadSearchVolume][type]': 'range',
-    'data[estimatedBroadSearchVolume][min]': '1',
-    'data[estimatedBroadSearchVolume][max]': '9999999',
-    'data[organicProductCount][type]': 'range',
-    'data[organicProductCount][min]': '1',
-    'data[organicProductCount][max]': '9999999',
-    'data[sort][type]': 'sort',
-    'data[sort][column]': 'estimatedExactSearchVolume',
-    'data[sort][direction]': 'desc',
-    'data[paginate][type]': 'paginate',
-    'data[paginate][pageSize]': '8000',
-    'skipCounter': 'false',
-    'excludeTopBrands': 'false',
-    } ,
-  'supplier': 
-    {
-    'data[paginate][type]': 'paginate',
-    'data[paginate][pageSize]': '10',
-    'data[productDesc][type]': 'match',
-    'data[productDesc][valuesArray][]': 'makeup organizer',
-    'data[productDesc][minShouldMatch]': '1',
-    'skipCounter': 'false',
-    'excludeTopBrands': 'false'
-    },
-   'product database':
-       {
-        'data[listedAt][type]': 'multiFieldsRange',
-        'data[listedAt][primaryField]': 'listedAt',
-        'data[listedAt][secondaryField]': 'estimatedListedAt',
-        'data[query][type]': 'query',
-        'data[query][searchTerm]': 'tennis knee sleeve',
-        'data[query][queryFields][]': ['name', 'brand', 'asin'],
-        #'data[calculatedCategory][type]': 'terms',
-        #'data[calculatedCategory][valuesArray][]': ['Appliances', 'Arts, Crafts & Sewing', 'Automotive', 'Baby', 'Beauty & Personal Care', 'Camera & Photo', 'Cell Phones & Accessories', 'Clothing, Shoes & Jewelry', 'Computers & Accessories', 'Electronics', 'Grocery & Gourmet Food', 'Health & Household', 'Home & Kitchen', 'Industrial & Scientific', 'Kitchen & Dining', 'Musical Instruments', 'Office Products', 'Patio, Lawn & Garden', 'Pet Supplies', 'Software', 'Sports & Outdoors', 'Tools & Home Improvement', 'Toys & Games'],
-        'data[country][type]': 'terms',
-        'data[country][valuesArray][]': 'us',
-        'data[sort][type]': 'sort',
-        'data[sort][column]': 'name',
-        'data[sort][direction]': 'asc',
-        'data[paginate][type]': 'paginate',
-        'data[paginate][pageSize]': '100',
-        'data[paginate][from]': '0',
-        'data[isUnavailable][type]': 'terms',
-        'data[isUnavailable][valuesArray][]': 'false',
-        # 'data[price][type]': 'range',
-        # 'data[price][min]': '0',
-        # #'data[price][max]': '9999',
-        # 'data[net][type]': 'range',
-        # 'data[net][min]': '0',
-        # #'data[net][max]': '9999',
-        # 'data[rank][type]': 'range',
-        # 'data[rank][min]': '0',
-        # #'data[rank][max]': '9999',
-        # 'data[estimatedSales][type]': 'range',
-        # 'data[estimatedSales][min]': '0',
-        # #'data[estimatedSales][max]': '9999',
-        # 'data[estRevenue][type]': 'range',
-        # 'data[estRevenue][min]': '0',
-        # #'data[estRevenue][max]': '9999',
-        # 'data[nReviews][type]': 'range',
-        # 'data[nReviews][min]': '0',
-        # #'data[nReviews][max]': '9999',
-        # 'data[rating][type]': 'range',
-        # 'data[rating][min]': '0',
-        # #'data[rating][max]': '9999',
-        # 'data[weight][type]': 'range',
-        # 'data[weight][min]': '0',
-        # #'data[weight][max]': '9999',
-        # 'data[nSellers][type]': 'range',
-        # 'data[nSellers][min]': '0',
-        # #'data[nSellers][max]': '9999',
-        # 'data[listingQualityScore][type]': 'range',
-        # 'data[listingQualityScore][min]': '0',
-        # #'data[listingQualityScore][max]': '9999',
-        'data[isComplete][type]': 'terms',
-        'data[isComplete][valuesArray][]': 'true',
-        'data[state][type]': 'terms',
-        'data[state][valuesArray][]': 'active',
-        'skipCounter': 'true',
-        'excludeTopBrands': 'false',
-        'collapseParent': 'true',
-        }
-}
-    
-
-
-
-list_keys = {
- 'keyword': {
-     'name': [],
-     'score': [],
-     'matches': [],
-     'id': [],
-     'exactSuggestedBidMedian': [],
-     'avgGiveaway': [],
-     'exactAvgCpc': [],
-     'exactSearchVolume': [],
-     'estimatedBroadSearchVolume': [],
-     'country': [],
-     'quarterlyTrend': [],
-     'estimatedAvgGiveaway': [],
-     'easeOfRankingScore': [],
-     'broadSearchVolume': [],
-     'broadSuggestedBidMedian': [],
-     'category': [],
-     'monthlyTrend': [],
-     'broadAvgCpc': [],
-     'estimatedExactSearchVolume': [],
-     'keyword_url': [],
-     'hasUpdatedSearchVolume': [],
-     'hasUpdatedCpc': [],
-     'organicProductCount': [],
-     'sponsoredProductCount': []
-   },
- 'supplier':{
-     'name': [],
-     'supplier_id': [],
-     'location': [],
-     'customers': [],
-     'score': [],
-     'latest_shipment': [],
-     'products_manufactured': [],
-     'total_shipments': []  
-  },
- 'product database':{
-     'name': [], 
-     'id': [],
-     #'keyword': [],
-     #'Exact Search Volume': [],
-     'nReviews': [], 
-     'estimatedSales': [], 
-     'country': [], 
-     'weight': [], 
-     'weightUnit': [],
-     'state': [], 
-     'apiUpdatedAt': [], 
-     'imageUrl': [], 
-     'fees': [], 
-     'subCategory': [],
-     'subCategories': [],
-     'width': [], 
-     'dimensions': [],
-     'dimensionUnit': [],
-     'categoryNullifiedAt': [],
-     'estRevenue': [],
-     'scrapedAt': [], 
-     'rating': [],
-     'tier': [], 
-     'hasVariants': [],
-     'rawCategory': [],
-     'sellerName': [], 
-     'nSellers': [],
-     'dimensionValuesDisplayData': [],
-     'category': [], 
-     'isUnavailable': [], 
-     'listingQualityScore': [], 
-     'sellerType': [],
-     'listedAt': [],
-     'estimatedListedAt': [],
-     'length': [],
-     'noParentCategory': [],
-     'isSharedBSR': [], 
-     'color': [], 
-     'calculatedCategory': [],
-     'asin': [],
-     'brand': [], 
-     'scrapedParentAsin': [],
-     'multipleSellers': [], 
-     'rank': [], 
-     'pageAsin': [],
-     'height': [],  
-     'price': [],
-     'apiCategory': [],
-     'net': [],
-     'feeBreakdown': [], 
-     'variantAsinsCount': [],
-     'sampleVariants': [], 
-     'product_url': [], 
-     'bsr_product': [],
-     'hasRankFromApi': [],
-     'currency_code': [],  
-     'Parent Keyword': [],
-     'Total NOP for the keyword': []
-     }
-}
 
 
 def file_exists(file_name):
@@ -278,48 +47,59 @@ def file_exists(file_name):
 
 
 def get_bearer_token():
-    #g = get_proxies()
-    #indice = random.randint(0, len(g)-1)
-    #print(indice)
-    #proxy = g[2]
-    #response = requests.post(SIGN_IN_URL, headers=SIGN_IN_HEADERS, params=SIGN_IN_PAYLOADS, proxies={'http': proxy, 'https': proxy}, timeout=60)
     response = requests.post(SIGN_IN_URL, headers=SIGN_IN_HEADERS, params=SIGN_IN_PAYLOADS, timeout=30)
-    #print(response.text)
     dic_str = response.text
     token = ' '.join(['Bearer',dic_str.split('token')[1].split('"')[2]])
-    #print(token)
     return token
 
+def update_bearer_token():
+    try:
+        page = requests.get(KEYWORD_URL, headers=headers, params=params, timeout=20)
+        if page.status_code == 200:
+            print('Token is valid!')
+            return
+        raise Exception(page.status_code)
+    except Exception as inst: 
+        if inst.args[0] == 401:
+            print('Updating bearer token...')
+            headers['authorization'] = get_bearer_token()
+            configweb = {'SIGN_IN_URL': SIGN_IN_URL, 
+                       'KEYWORD_URL': KEYWORD_URL, 
+                       'SUPPLIERS_URL': SUPPLIERS_URL,
+                       'PRODUCT_DATABASE_URL': PRODUCT_DATABASE_URL,
+                       'SIGN_IN_HEADERS': SIGN_IN_HEADERS,
+                       'SIGN_IN_PAYLOADS': SIGN_IN_PAYLOADS,
+                       'headers': headers,
+                       'params':params,
+                       'list_keys': list_keys}
+            with open("configWeb.json", "w") as json_file:
+                json.dump(configweb, json_file)
+        else:
+            SystemExit(f'Error type {inst}')
+        
 
 def get_params(keyword, key, subkey, startFrom = None):
     if isinstance(keyword, str):
         params[key][subkey] = keyword
         if startFrom is not None:
-            params[key]['data[paginate][from]'] = startFrom
+            params[key]['from'] = startFrom
         return params[key]
     else:
         raise ValueError('the keyword needs to be a string!')
 
 
 
-
-
-def js_request(keyword, url = KEYWORD_URL, key = 'keyword', subkey = 'data[shingles][searchTerm]', startFrom = None): 
+def js_request(keyword, url = KEYWORD_URL, key = 'keyword', subkey = 'search_terms', startFrom = None): 
     params = get_params(keyword, key, subkey, startFrom)
-    #g = get_proxies()
-    #random.seed(1)
-    #indice = random.randint(0, len(g)-1)
-    #print(indice)
-    #proxy = g[2]
-    for i in range(9): 
+    for i in range(3): 
         try:
             #page = requests.get(url, headers=headers, proxies={'http': proxy, 'https': proxy}, params=params, timeout=60)
-            page = requests.get(url, headers=headers, params=params, timeout=20)
+            page = requests.get(url, headers=headers, params=params, timeout=25)
             page.raise_for_status()
         except requests.exceptions.Timeout as etmout:
-            if i == 4:
+            if i == 2:
                 pass#raise SystemExit(etmout)
-            print('Request timed out. Trying to request page again. Try #{} of 4'.format(i+1))
+            print('Request timed out. Trying to request again for {}. Try #{} of 3'.format(keyword, i+1))
             time.sleep(1)
         except requests.HTTPError as ehttp:
             if ehttp.response.status_code == 429 and i != 4:
@@ -328,24 +108,21 @@ def js_request(keyword, url = KEYWORD_URL, key = 'keyword', subkey = 'data[shing
                 print('Requesting for page again. Try #{} of 4'.format(i+1))
             elif ehttp.response.status_code == 401:
                 print('The Bearer token is invalid. Getting a new one...')
-                raise SystemExit(ehttp)
-                #try:
-                #    headers['authorization'] = get_bearer_token()
-                    #print(headers['authorization'])
-                #except:
-                 #   pass
-            else: print(ehttp)#pass#raise SystemExit(ehttp)
+                try:
+                    update_bearer_token()
+                    print('Bearer Token has been updated')
+                    time.sleep(1)
+                except:
+                    pass
+            else: print(ehttp)
         except requests.exceptions.RequestException as err:
-            print(err)#pass#raise SystemExit(err)
+            print(err)
             break
         else: 
-            #self.requestQueue.append(datetime.now())
             return page.text
 
 
 def transform_list_of_dicts(text, data_type = 'keyword', appendKeyword = None):
-    #print(type(text))
-    #print(text)
     if not isinstance(text, str):
         print('Page text returned belongs to {}'.format(type(text)))
         return []
@@ -381,7 +158,7 @@ def transform_list_of_dicts(text, data_type = 'keyword', appendKeyword = None):
     return list_of_dicts
 
 
-def build_list_of_dicts(keyword, url = KEYWORD_URL, key = 'keyword', subkey = 'data[shingles][searchTerm]'):
+def build_list_of_dicts(keyword, url = KEYWORD_URL, key = 'keyword', subkey = 'search_terms'):
     if isinstance(keyword, list):
         if not keyword:
             raise ValueError('Keyword list must not be empty')
@@ -416,9 +193,7 @@ def build_list_of_dicts(keyword, url = KEYWORD_URL, key = 'keyword', subkey = 'd
 nest_asyncio.apply()    
 async def concurrent_builder_dicts(taxonomy_words, key = 'keyword', m_workers=10):
     list_of_dicts = [] 
-    #m = multiprocessing.Manager()
-    #lock = m.Lock()
-    with concurrent.futures.ProcessPoolExecutor(max_workers=m_workers) as executor: 
+    with concurrent.futures.ThreadPoolExecutor(max_workers=m_workers) as executor: 
         try:
             loop = asyncio.get_event_loop()
         except:
@@ -431,28 +206,20 @@ async def concurrent_builder_dicts(taxonomy_words, key = 'keyword', m_workers=10
                         ]
             elif key == 'product database':
                     futures = [
-                        loop.run_in_executor(executor, functools.partial(build_list_of_dicts, word, PRODUCT_DATABASE_URL, key,  'data[query][searchTerm]'))
+                        loop.run_in_executor(executor, functools.partial(build_list_of_dicts, word, PRODUCT_DATABASE_URL, key,  'include_keywords'))
                         for word in taxonomy_words
                         ]
         except:
             pass
         for response in await asyncio.gather(*futures):
             try:
-                #response.to_pickle("data_dictionary_of_keyword_{}.pkl".format(response[0]['id']))
                 for element in response:
-                    #if element not in list_of_dicts:
                         list_of_dicts.append(element)
-                        #print(len(list_of_dicts))
+                        
             except:
                 pass
 
     return list_of_dicts
-
-
-
-
-
-
 
 
     
@@ -461,11 +228,6 @@ def paralel_builder(taxonomy_words, key = 'keyword', m_workers=10):
     try: 
         loop = asyncio.get_event_loop()
         list_dict_keywords = loop.run_until_complete(concurrent_builder_dicts(taxonomy_words, key = key,  m_workers=m_workers))
-    # if file_exists():
-    #     with open("JSS_List_of_keywords.pkl", 'rb') as pickle_file:
-    #         list_dict_keywords = pickle.load(pickle_file)
-    #     return list_dict_keywords
-    #else: return -1
     except:
         pass
     return list_dict_keywords
@@ -495,22 +257,23 @@ def save_file(data, file_name, method = 'json'):
     
     
 
-def has_to_be_named2(taxonomy_word):
-    N = 5
+def webscraping_keywords(taxonomy_word):
+    update_bearer_token()
+    N = 3
     temp_names = taxonomy_word
     list_of_keywords = []
-    while len(list_of_keywords) < 10**4:
+    while len(list_of_keywords) < 2*10**5:
         if (isinstance(temp_names, list) or isinstance(temp_names, np.ndarray)) and len(temp_names):
             try:
                 iter_list = paralel_builder(temp_names)
                 if not iter_list:
                     print('Error in getting new keywords! Trying again...')
+                    temp_names = taxonomy_word
                 else:
                     list_of_keywords.extend(iter_list)
                     if len(iter_list)<= N:
                         indices = list(range(len(iter_list)))
                     else:
-                        #random.seed(1)
                         indices = random.sample(range(0, len(iter_list)-1), N)
                     iter_list = [iter_list[ind] for ind in indices]
                     temp_names = [d['name'] for d in iter_list]
@@ -520,20 +283,14 @@ def has_to_be_named2(taxonomy_word):
             temp = build_list_of_dicts(temp_names)
             list_of_keywords.extend(temp)
             temp_names = [d['name'] for d in temp]
-            #print(len(list_of_keywords))
     print('------------- Over ---------------')
-    #file_name = "JSS_List_of_keywords_duplicates_{}.json".format(taxonomy_word)
-    #with open(file_name, 'wb') as pickle_file:
-    #    pickle.dump(list_of_keywords, pickle_file)  
     ans = remove_duplicates_from_list(list_of_keywords) 
-    file_name = ''.join(["Keywords/", "JSS_List_of_keywords_{}".format(taxonomy_word)])
-    save_file(ans, file_name)
     return ans
 
 
-def has_to_be_named_yet(keyword_list):
+def webscraping_products(keyword_list):
+    update_bearer_token()
     N = 5
-    #temp_names = taxonomy_word
     list_of_products = []
     if isinstance(keyword_list, str):
         list_of_products = paralel_builder(keyword_list, key = 'product database')
@@ -548,16 +305,15 @@ def has_to_be_named_yet(keyword_list):
                     list_of_products.extend(iter_list)
             except:
                 pass
-            #print(len(list_of_keywords))
+           
     else: raise ValueError('The keywords provided need to be a string or a list of strings!')
     print('------------- Over ---------------')
     try:
         ans = remove_duplicates_from_list(list_of_products) 
-        #ans = remove_duplicates_from_list(ans, key = 'name')
+        
     except:
         pass
-    #file_name = "JSS_List_of_products_from_50520_to_57000"#.format(len(keyword_list))
-    #save_file(ans, file_name)
+
     return ans
 
     
@@ -609,84 +365,16 @@ def transform_product_database_to_pd(list_of_data, sort_by = 'net'):
             list_keys['product database'][non_null_key].append(value_to_add) 
     temp_pd = pd.DataFrame( columns = list_keys['product database'].keys() )
     for key, value in list_keys['product database'].items():
-        temp_pd[key] = np.asarray(value)
+        if key in ['hasVariants', 'isUnavailable',  'noParentCategory', 'multipleSellers']:
+            temp_pd[key] = np.array(value).astype(np.int32)
+        else:
+            temp_pd[key] = np.asarray(value)
                   
     return temp_pd.sort_values(by=sort_by, ascending=False)#.set_index('name')
 
 
 
 
-def get_proxies():
-    list_proxies = []
-    with open('proxies.csv', 'r') as csv_file:
-        reader = csv.reader(csv_file)
-        for row in reader:
-            list_proxies.append(row[0])
-    return list_proxies
 
-
-
-def main(petit_list):
-    prods_list = has_to_be_named_yet(petit_list)
-    return prods_list
-
-
-if __name__ == "__main__":
-    print('comecou')
-    with open('Keywords/JSS_List_of_keywords_from_0_to_160.json', 'r') as json_file:
-        keywords_list = ujson.load(json_file)
-    print('keyword list loaded')
-    for i in range(340500, 440500, 4000):
-        petit_list = keywords_list[i:i+4000]
-        petit_list = [k['name'] for k in petit_list]
-        print('begin of main')
-        res = main(petit_list)
-        file_name = "Products/JSS_List_of_products_from_{}_to_{}".format(i, i+4000)
-        save_file(res, file_name)
-        print('Sleeping for 1000 s')
-        time.sleep(1000)
-    #res = js_request('baby')
-   #  g = get_proxies()
-   #  #p = get_params('baby', 'keyword', 'data[shingles][searchTerm]')
-   #  res = has_to_be_named2(['baby', 'disco ball', 'skin care', 'dog', 'toy'])
-   #  #res = paralel_builder(['baby', 'disco ball', 'skin care', 'dog', 'toy'], key = 'keyword', m_workers=10)
-   # #prods_list = main()
-# if __name__ == "__main__":
-#     print('comecou')
-#     # with open('JSS_List_of_products_from_0_to_50000.json', 'r') as file:
-#     #     products_list = ujson.load(file)
-#     # print(len(products_list))
-#     # with open('JSS_List_of_products_from_50000_to_50500.json', 'r') as file:
-#     #     products_list.extend(ujson.load(file))
-#     # # products_list = []
-#     # print(len(products_list)) 
-#     N = 196500
-#     B = 192500
-#     for i in range(B, N, 8000):
-#         products_list = []
-#         for j in range(i, min(i+4*2000,N), 2000):
-#             file_name = "JSS_List_of_products_from_{}_to_{}.json".format(j, j+2000)
-#             with open(file_name, 'r') as json_file: 
-#                 products_list.extend(ujson.load(json_file))
-#             print((j-i)/2000)
-#         print('carregou')
-#     #try:
-#     #    products_list = remove_duplicates_from_list(products_list) 
-#         #products_list = remove_duplicates_from_list(products_list, key = 'name')
-#     #except:
-        
-#         #print('duplicates still on')
-#         df_prod1 = transform_product_database_to_pd(products_list)
-#         print('transformou')
-#         try:
-#             df_prod1 = df_prod1.drop_duplicates(subset=['id'])
-#             print('ok')
-#         except:
-#             print('oops')
-#         df_prod1.to_csv('products_{}_to_{}.csv'.format(i,j+2000), index=False, sep = '\t')
-#         print((i-B)/8000)
-    
-        
-        
 
 
